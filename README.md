@@ -1,313 +1,250 @@
-# 📘 Age & Gender Prediction using CNN (UTKFace Dataset)
+# 🖼️ Age & Gender Prediction using CNN  
+![Banner](/mnt/data/7040395b-6451-4003-9cc1-4114207862f9.png)
 
-This project builds a multi-task deep learning model that predicts:
+## 📌 Overview  
+This project builds a **multi-task deep learning model** to predict:
 
-Age (regression)
+- **Age** (regression)  
+- **Gender** (classification: Male / Female)  
 
-Gender (classification: male/female)
+using the **UTKFace** dataset.  
+It includes a **PyTorch training pipeline**, a **modular code structure**, and a **Streamlit web app** for real-time inference.
 
-using the UTKFace dataset, a widely used dataset for facial attribute prediction tasks.
+---
 
-A full training pipeline, a modular PyTorch codebase, and a Streamlit web app for real-time predictions are included.
+## 📂 Project Structure
 
-🚀 Project Structure
 Age-Gender-Prediction-using-CNN/
 │
 ├── app/
-│   └── streamlit_app.py          # Streamlit UI for model inference
+│ └── streamlit_app.py # Streamlit UI for predictions
 │
 ├── checkpoints/
-│   └── best_checkpoint.pth       # Saved model (ignored in Git due to size)
+│ └── best_checkpoint.pth # Saved model (ignored in GitHub: >100MB)
 │
 ├── data/
-│   └── UTKFace/                   # UTKFace dataset (age_gender_race_date.jpg)
+│ └── UTKFace/ # UTKFace dataset images (age_gender_*.jpg)
 │
 ├── src/
-│   ├── train.py                  # Main training script
-│   ├── data/
-│   │   └── dataset.py            # UTKFace dataset loader
-│   ├── models/
-│   │   └── multitask_resnet.py   # Model definition (ResNet backbone)
-│   ├── utils.py                  # Checkpoint save/load utilities
-│   └── __init__.py
+│ ├── train.py # Training script
+│ ├── data/
+│ │ └── dataset.py # Custom PyTorch Dataset loader
+│ ├── models/
+│ │ └── multitask_resnet.py # CNN model (ResNet backbone)
+│ ├── utils.py # Checkpoint utilities
+│ └── init.py
 │
-├── .gitignore
-└── README.md (this file)
+└── README.md
 
-🧠 1. Problem Statement
+yaml
+Copy code
 
-Predict a person’s age and gender from a single input image.
+---
 
-This project uses:
+## 📁 Dataset — UTKFace
 
-A multi-task learning approach
+Each image filename follows the pattern:
 
-A shared backbone (ResNet-18/34/50)
-
-Two output heads:
-
-Age Regression Head
-
-Gender Classification Head
-
-🖼️ 2. Dataset — UTKFace
-
-UTKFace contains over 20,000+ face images, spanning:
-
-Attribute	Description
-Age	0–116 years
-Gender	0 = Male, 1 = Female
-Race	Not used in this project
-Image Size	Varies (mostly 200×200)
-Filename format
-age_gender_race_dateandtime.jpg
+age_gender_race_date.jpg
 Example: 21_0_2_20170116174512345.jpg
 
-🔧 3. Model Architecture — MultiTaskResNet
+yaml
+Copy code
 
-Your model is defined in:
+Used attributes:
 
-src/models/multitask_resnet.py
+| Field | Description |
+|-------|-------------|
+| age | 0–116 years |
+| gender | 0 = Male, 1 = Female |
 
-Architecture Summary:
+Dataset includes **20k+ images** with variations in:
 
-Backbone: ResNet (pretrained or untrained)
+- Pose  
+- Lighting  
+- Background  
+- Ethnicity  
 
-Shared CNN Features
+---
 
-Two Heads:
+## 🧠 Model Architecture — MultiTaskResNet
 
-age_head → outputs a single regression value
+The model shares a **ResNet** backbone and branches into two heads:
 
-gender_head → outputs a 2-class logits vector
+java
+Copy code
+         Shared CNN (ResNet)
+                 │
+  ┌──────────────┴──────────────┐
+  │                             │
+Age Regression Head Gender Classification Head
+(1 output neuron) (2 output neurons)
 
-Loss Function
-Total Loss = AgeLoss(MSE or L1) + 0.5 * GenderLoss(CrossEntropy)
+shell
+Copy code
 
+### Loss Function
+Total Loss = L_age + 0.5 × L_gender
 
-You can tune the gender weight using:
+markdown
+Copy code
 
---gender_loss_weight 0.5
+Where:
+- **L_age** = MSE or L1 Loss  
+- **L_gender** = CrossEntropyLoss  
 
-🛠️ 4. Training Pipeline (src/train.py)
+---
 
-Your training file performs the following steps:
+## 🛠️ Training Pipeline (src/train.py)
 
-✔ Load Dataset
+### ✔ Features
+- Custom CLI arguments  
+- Train/Val/Test split  
+- Dataset subsampling (`--max_samples`, `--balanced_by_gender`)  
+- GPU/CPU auto-detection  
+- Mixed precision training (`--use_amp`)  
+- Checkpoint saving  
+- Final evaluation  
 
-UTKFaceDataset parses filename to extract age & gender.
+### ✔ Sample Command
 
-✔ Train/Val/Test Split
---val_frac 0.1
---test_frac 0.1
+```bash
+python -m src.train --data_dir data/UTKFace --epochs 5 --batch_size 32
+📊 Model Performance (Your Results)
+These metrics are from your run on a reduced dataset:
 
-✔ Dataloaders created with:
-
-Augmentations via torchvision.transforms
-
-Configurable batch_size
-
-Safe num_workers for Windows
-
-✔ Model Creation
-model = MultiTaskResNet(pretrained=True/False)
-
-✔ Mixed Precision Training (optional)
---use_amp
-
-✔ Checkpointing
-
-Best validation loss model stored at:
-
-checkpoints/best_checkpoint.pth
-
-✔ Final Evaluation on Test Set
-📊 5. Training Metrics (Your Results)
-
-These are the metrics you provided last night:
-
-Epoch 5 Results
+Validation Metrics
 Metric	Value
-Train Loss	184.9176
-Validation Loss	201.5752
-Validation MAE (Age)	10.3883 years
-Validation Gender Accuracy	57.50%
-Final Test Metrics
+Train Loss	184.92
+Val Loss	201.58
+Val MAE (Age)	10.39 years
+Val Gender Accuracy	57.50%
+
+Test Metrics
 Metric	Value
-Test Loss	255.7194
-Test MAE (Age)	12.1538 years
+Test Loss	255.72
+Test MAE	12.15 years
 Test Gender Accuracy	64.50%
 
-These are good starting results for a lightweight model trained on a reduced dataset.
+These results are good for a lightweight model trained on a small sample.
+Performance improves significantly with:
 
-⚡ 6. Streamlit Inference App
+Larger dataset
 
-Your app lives at:
+Pretrained backbone
 
-app/streamlit_app.py
+Augmentations
 
-Features:
+More epochs
 
-Upload a face image (jpg/png)
+🖥️ Streamlit App (app/streamlit_app.py)
+⭐ Features
+Upload image (jpg/png)
 
-Preprocess → Resize → Normalize
+Image preview
 
-Auto-load model with @st.cache_resource
+Auto-loaded model
 
-Predict:
+Predictions with probability
 
-Age (float)
+Clean UI layout
 
-Gender (Male/Female with probability)
-
-Beautiful UI with use_container_width
-
-Run Streamlit
-cd "E:\Age_Gender Prediction using CNN"
+Run the app:
+bash
+Copy code
 streamlit run app/streamlit_app.py
+The app displays:
 
-🧩 7. Detailed Explanation of Important Files
-📁 src/data/dataset.py
+Predicted Age
 
-Loads UTKFace images
+Predicted Gender + Probability
 
-Parses filename: age_gender_*.jpg
+📁 Code Explanation (Important Files)
+🔹 src/data/dataset.py
+Loads image
 
-Returns:
+Parses age & gender from filename
 
-{
-  'image': image_tensor,
-  'age': age,
-  'gender': gender
-}
+Applies transforms
 
+Returns dict {image, age, gender}
 
-Handles:
+🔹 src/models/multitask_resnet.py
+Defines the model:
 
-Transformations
+ResNet backbone
 
-Corrupt file filtering
+Age regression head
 
-Iterable Dataset
+Gender classification head
 
-📁 src/models/multitask_resnet.py
+🔹 src/train.py
+Full training loop
 
-Defines the multitask model:
+Subset sampling
 
-backbone = resnet18(pretrained)
-age_head = Linear(512, 1)
-gender_head = Linear(512, 2)
+Progress bars
 
+Evaluation + checkpointing
 
-Outputs:
+🔹 app/streamlit_app.py
+Frontend interface
 
-age_pred, gender_logits
+Uses st.cache_resource to cache model
 
-📁 src/train.py
+Preprocessing & inference
 
-Responsible for:
+🔹 checkpoints/
+Stores .pth trained weights
 
-CLI arguments
+Added to .gitignore because GitHub blocks files >100MB
 
-Deterministic seed setup
-
-Dataset creation
-
-Subsampling (max_samples, balanced_by_gender)
-
-Training loop with progress bar
-
-Validation and test evaluation
-
-Checkpoint saving
-
-📁 src/utils.py
-
-Contains:
-
-save_checkpoint()
-
-load_checkpoint()
-
-Utility wrappers for safe model reloads
-
-📁 checkpoints/
-
-Default folder for .pth files
-(ignored in .gitignore because of GitHub's 100MB limit)
-
-📁 app/streamlit_app.py
-
-The core UI.
-
-Handles:
-
-Safe path injection for imports
-
-Cached model loading
-
-Image uploader with unique key
-
-Prediction with progress spinner
-
-⚙️ 8. Installation & Setup
-Clone Repository
-git clone https://github.com/Ranjan83711/Age-Gender-Prediction-using-CNN.git
-cd Age-Gender-Prediction-using-CNN
-
-Create Virtual Environment
+⚙️ Setup & Installation
+Create environment:
+bash
+Copy code
 conda create -n agegender python=3.10
 conda activate agegender
+Install requirements:
+bash
+Copy code
+pip install torch torchvision streamlit pillow numpy scikit-learn tqdm
+Download UTKFace dataset:
+Place images in:
 
-Install Requirements
-pip install torch torchvision streamlit numpy pillow scikit-learn tqdm
-
-🏋️ 9. Run Training
-Basic Training
-python -m src.train --data_dir data/UTKFace --epochs 5 --batch_size 32
-
-With Pretrained Backbone
-python -m src.train --pretrained
-
-Train with Fewer Images (for slow PCs)
+kotlin
+Copy code
+data/UTKFace/
+🚀 Training Examples
+Use whole dataset:
+bash
+Copy code
+python -m src.train --data_dir data/UTKFace --pretrained
+Train on fewer samples (good for low-end PCs):
+bash
+Copy code
 python -m src.train --max_samples 2000
-
-Balanced Subset:
+Balanced gender dataset:
+bash
+Copy code
 python -m src.train --balanced_by_gender --max_per_gender 1000
+🚧 Future Improvements
+Add face detection (MTCNN / RetinaFace)
 
-🖥️ 10. Run Inference App
-streamlit run app/streamlit_app.py
+Switch age regression → age classification bins
 
+Use ResNet50 or EfficientNet
 
-Upload an image → Model predicts age & gender.
+Deploy on Hugging Face Spaces
 
-🚧 11. Known Limitations / Future Work
+Add Grad-CAM visualization
 
-Age MAE ~10 years on small subset — can be improved by:
+Optimize age regression using L1 loss
 
-Using L1 loss
+🙌 Conclusion
+This repository provides a complete, modular, well-structured pipeline for:
 
-Training longer on full dataset
-
-Using ResNet34/50 or EfficientNet
-
-Gender accuracy ~65% on limited data
-
-Add face detection (MTCNN/RetinaFace)
-
-Add augmentation (ColorJitter, Cutout)
-
-Host model in Hugging Face Spaces
-
-🌟 12. Conclusion
-
-This project demonstrates a full end-to-end deep learning pipeline:
-
-✔ UTKFace dataset parsing
-✔ Custom multi-task model
+✔ Data loading
+✔ Multi-task CNN modeling
 ✔ Training + validation + testing
-✔ Model checkpointing
-✔ Streamlit inference dashboard
-✔ GitHub-ready modular code structure
-
-You now have a complete production-style age & gender prediction system.
+✔ Real-time prediction via Streamlit
