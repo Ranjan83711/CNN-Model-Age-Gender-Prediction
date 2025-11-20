@@ -66,9 +66,6 @@ Upload a face image → Get age & gender prediction.
 
 ---
 
-## Notes
 
-* UTKFace images must be placed in `data/UTKFace/`.
-* Large model checkpoint files are ignored by GitHub due to size limits.
 
 ---
